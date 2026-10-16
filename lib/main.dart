@@ -44,8 +44,8 @@ String t(String k) => S[lang.value]![k] ?? k;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
-    url: const String.fromEnvironment('SUPABASE_URL'),
-    anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY'),
+    url: const String.fromEnvironment('https://qmrfyvxvmbkokldffpnq.supabase.co'),
+    anonKey: const String.fromEnvironment('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtcmZ5dnh2bWJrb2tsZGZmcG5xIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MjEyOTkwNCwiZXhwIjoyMTA3NzA1OTA0fQ.YbiV0HhmZEYuxB8Y41lhTsvD93OptUBo10b1VpsVbYc'),
   );
   final sp = await SharedPreferences.getInstance();
   lang.value = sp.getString('lang') ?? 'uz';
