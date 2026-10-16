@@ -1,6 +1,6 @@
 """Hosil X Telegram bot (aiogram 3 + supabase-py).
 
-Muhit o'zgaruvchilari: BOT_TOKEN, SUPABASE_URL, SUPABASE_SERVICE_KEY, WEB_URL
+Muhit o'zgaruvchilari: BOT_TOKEN, SUPABASE_URL, SUPABASE_SERVICE_KEY, WEB_URL, PORT
 Service key faqat serverda (Render) saqlanadi, hech qachon klientga berilmaydi.
 Ishga tushirish: python main.py
 """
@@ -385,12 +385,27 @@ async def reminder_loop(bot: Bot):
         await asyncio.sleep(60)
 
 
+async def start_http():
+    """Render.com uchun soxta HTTP server (Health Check)."""
+    async def health(_):
+        return web.Response(text="ok")
+    app = web.Application()
+    app.router.add_get("/", health)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    await web.TCPSite(runner, "0.0.0.0", int(os.environ.get("PORT", "10000"))).start()
+
+
 async def main():
     bot = Bot(os.environ["BOT_TOKEN"])
     dp = Dispatcher()
     dp.include_router(router)
+    
+    # Background tasklar
+    asyncio.create_task(start_http())  # <--- HTTP port ochish funksiyasi qo'shildi
     asyncio.create_task(reminder_loop(bot))
     asyncio.create_task(notify_loop(bot))
+    
     await dp.start_polling(bot)
 
 
