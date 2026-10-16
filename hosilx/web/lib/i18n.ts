@@ -62,3 +62,5 @@ import { extra4 } from "./i18n_extra4";
 for (const l of LANGS) Object.assign(dict[l], extra4[l]);
 import { extra5 } from "./i18n_extra5";
 for (const l of LANGS) Object.assign(dict[l], extra5[l]);
+import { extra6 } from "./i18n_extra6";
+for (const l of LANGS) Object.assign(dict[l], extra6[l]);
