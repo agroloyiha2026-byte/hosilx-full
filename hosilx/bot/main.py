@@ -395,15 +395,14 @@ async def start_http():
     await runner.setup()
     await web.TCPSite(runner, "0.0.0.0", int(os.environ.get("PORT", "10000"))).start()
 
-
 async def main():
     bot = Bot(os.environ["BOT_TOKEN"])
-      await start_http()
+    
+    await start_http()  # <--- Boshqa qatorlar bilan bir xil qatorda (bir xil space tashlab) tursin
+    
     dp = Dispatcher()
     dp.include_router(router)
     
-    # Background tasklar
-    asyncio.create_task(start_http())  # <--- HTTP port ochish funksiyasi qo'shildi
     asyncio.create_task(reminder_loop(bot))
     asyncio.create_task(notify_loop(bot))
     
