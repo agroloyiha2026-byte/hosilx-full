@@ -1,0 +1,21 @@
+import type { Lang } from "./i18n";
+export const extra4: Record<Lang, Record<string, string>> = {
+  uz: { d_saved: "Saqlanganlar", d_settings: "Sozlamalar", saved_empty: "Saqlangan mahsulot yo‘q.", f_image: "Rasm (5 MB gacha)",
+    ob_title: "Hosil X ga xush kelibsiz!", ob_1: "Mahsulotingizni joylang va xaridorlar bilan bog‘laning.", ob_2: "Ombor toping va narxlarni solishtiring.",
+    ob_3: "Vazifa, moliya va AI maslahat — hammasi bir joyda.", ob_ok: "Boshladik", theme_l: "Mavzu", lang_l: "Til",
+    link_tg: "Telegram bilan ulash", link_hint: "Kodni botga yuboring: /link KOD (15 daqiqa amal qiladi)", admin: "Admin",
+    adm_reports: "Shikoyatlar", adm_users: "Foydalanuvchilar", adm_products: "E’lonlar", resolve: "Hal qilindi", no_items: "Hozircha yo‘q.",
+    hide_it: "Yashirish", req_prompt_t: "Qaysi mahsulot?", req_prompt_q: "Necha tonna?", report: "Shikoyat" },
+  ru: { d_saved: "Сохранённые", d_settings: "Настройки", saved_empty: "Нет сохранённых продуктов.", f_image: "Фото (до 5 МБ)",
+    ob_title: "Добро пожаловать в Hosil X!", ob_1: "Размещайте продукцию и связывайтесь с покупателями.", ob_2: "Находите склады и сравнивайте цены.",
+    ob_3: "Задачи, финансы и AI-советы — в одном месте.", ob_ok: "Начать", theme_l: "Тема", lang_l: "Язык",
+    link_tg: "Привязать Telegram", link_hint: "Отправьте боту: /link КОД (действует 15 минут)", admin: "Админ",
+    adm_reports: "Жалобы", adm_users: "Пользователи", adm_products: "Объявления", resolve: "Решено", no_items: "Пока пусто.",
+    hide_it: "Скрыть", req_prompt_t: "Какой продукт?", req_prompt_q: "Сколько тонн?", report: "Жалоба" },
+  en: { d_saved: "Saved", d_settings: "Settings", saved_empty: "No saved products.", f_image: "Image (up to 5 MB)",
+    ob_title: "Welcome to Hosil X!", ob_1: "Post your produce and connect with buyers.", ob_2: "Find storage and compare prices.",
+    ob_3: "Tasks, finance and AI advice in one place.", ob_ok: "Let's start", theme_l: "Theme", lang_l: "Language",
+    link_tg: "Link Telegram", link_hint: "Send to the bot: /link CODE (valid 15 minutes)", admin: "Admin",
+    adm_reports: "Reports", adm_users: "Users", adm_products: "Listings", resolve: "Resolved", no_items: "Nothing yet.",
+    hide_it: "Hide", req_prompt_t: "Which product?", req_prompt_q: "How many tons?", report: "Report" },
+};

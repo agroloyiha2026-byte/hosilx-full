@@ -1,0 +1,40 @@
+import type { Lang } from "./i18n";
+
+export const extra: Record<Lang, Record<string, string>> = {
+  uz: {
+    email: "Elektron pochta", password: "Parol", full_name: "Ism-familiya", role: "Men kimman?",
+    role_farmer: "Fermer / dehqon", role_buyer: "Xaridor", role_wh: "Ombor egasi",
+    signin: "Kirish", signup: "Ro‘yxatdan o‘tish", have_acc: "Akkauntingiz bormi? Kiring",
+    no_acc: "Akkaunt yo‘qmi? Ro‘yxatdan o‘ting", err_auth: "Email yoki parol noto‘g‘ri.",
+    err_weak: "Parol kamida 8 belgidan iborat bo‘lsin.", err_generic: "Xatolik yuz berdi. Qayta urinib ko‘ring.",
+    check_email: "Emailingizga tasdiqlash xati yuborildi. Tasdiqlagach kiring.",
+    logout: "Chiqish", wh_title: "Omborlar", empty_wh: "Hozircha omborlar yo‘q.",
+    capacity: "Sig‘im", free_space: "Bo‘sh joy", per_month: "oyiga / tonna", ton: "t",
+    request_storage: "Saqlash so‘rovi", price_na: "Narx kelishiladi",
+    st_cold: "Sovutgichli", st_dry: "Quruq", st_vegetable: "Sabzavot", st_grain: "Don", st_other: "Boshqa",
+  },
+  ru: {
+    email: "Эл. почта", password: "Пароль", full_name: "Имя и фамилия", role: "Кто вы?",
+    role_farmer: "Фермер / дехканин", role_buyer: "Покупатель", role_wh: "Владелец склада",
+    signin: "Войти", signup: "Регистрация", have_acc: "Уже есть аккаунт? Войдите",
+    no_acc: "Нет аккаунта? Зарегистрируйтесь", err_auth: "Неверный email или пароль.",
+    err_weak: "Пароль должен быть не короче 8 символов.", err_generic: "Произошла ошибка. Повторите попытку.",
+    check_email: "Письмо с подтверждением отправлено на почту. После подтверждения войдите.",
+    logout: "Выйти", wh_title: "Склады", empty_wh: "Пока нет складов.",
+    capacity: "Вместимость", free_space: "Свободно", per_month: "в месяц / тонна", ton: "т",
+    request_storage: "Запрос на хранение", price_na: "Цена договорная",
+    st_cold: "Холодильный", st_dry: "Сухой", st_vegetable: "Овощной", st_grain: "Зерновой", st_other: "Другой",
+  },
+  en: {
+    email: "Email", password: "Password", full_name: "Full name", role: "I am a...",
+    role_farmer: "Farmer", role_buyer: "Buyer", role_wh: "Warehouse owner",
+    signin: "Sign in", signup: "Sign up", have_acc: "Have an account? Sign in",
+    no_acc: "No account? Sign up", err_auth: "Wrong email or password.",
+    err_weak: "Password must be at least 8 characters.", err_generic: "Something went wrong. Please retry.",
+    check_email: "A confirmation email was sent. Confirm it, then sign in.",
+    logout: "Sign out", wh_title: "Warehouses", empty_wh: "No warehouses yet.",
+    capacity: "Capacity", free_space: "Free", per_month: "per month / ton", ton: "t",
+    request_storage: "Storage request", price_na: "Price on request",
+    st_cold: "Cold", st_dry: "Dry", st_vegetable: "Vegetable", st_grain: "Grain", st_other: "Other",
+  },
+};
