@@ -398,6 +398,7 @@ async def start_http():
 
 async def main():
     bot = Bot(os.environ["BOT_TOKEN"])
+      await start_http()
     dp = Dispatcher()
     dp.include_router(router)
     
