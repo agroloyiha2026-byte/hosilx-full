@@ -1,0 +1,21 @@
+import type { Lang } from "./i18n";
+export const extra7: Record<Lang, Record<string, string>> = {
+  uz: { stat_products: "Faol e’lonlar", stat_wh: "Omborlar", latest_products: "Yangi mahsulotlar", news: "Yangiliklar",
+    all_news: "Barcha yangiliklar", no_news: "Hozircha yangilik yo‘q.", how_title: "Hosil X qanday ishlaydi", all_products: "Hammasini ko‘rish",
+    s1_t: "Fermer", s1_d: "Mahsulot joylaydi, narxni solishtiradi, vazifa va moliyani yuritadi.",
+    s2_t: "Xaridor", s2_d: "Kerakli mahsulotni topadi va sotuvchi bilan to‘g‘ridan-to‘g‘ri kelishadi.",
+    s3_t: "Ombor egasi", s3_d: "Bo‘sh joyini e’lon qiladi va saqlash so‘rovlarini qabul qiladi.",
+    cta_t: "Bugunoq Hosil X bilan boshlang", cta_b: "Bepul ro‘yxatdan o‘tish", ad_label: "Reklama", admin_c: "Kontent" },
+  ru: { stat_products: "Активные объявления", stat_wh: "Склады", latest_products: "Новые продукты", news: "Новости",
+    all_news: "Все новости", no_news: "Новостей пока нет.", how_title: "Как работает Hosil X", all_products: "Смотреть все",
+    s1_t: "Фермер", s1_d: "Размещает продукцию, сравнивает цены, ведёт задачи и финансы.",
+    s2_t: "Покупатель", s2_d: "Находит нужный продукт и договаривается с продавцом напрямую.",
+    s3_t: "Владелец склада", s3_d: "Публикует свободное место и принимает запросы на хранение.",
+    cta_t: "Начните с Hosil X уже сегодня", cta_b: "Бесплатная регистрация", ad_label: "Реклама", admin_c: "Контент" },
+  en: { stat_products: "Active listings", stat_wh: "Warehouses", latest_products: "Latest products", news: "News",
+    all_news: "All news", no_news: "No news yet.", how_title: "How Hosil X works", all_products: "View all",
+    s1_t: "Farmer", s1_d: "Lists produce, compares prices, manages tasks and finances.",
+    s2_t: "Buyer", s2_d: "Finds the product needed and agrees with the seller directly.",
+    s3_t: "Warehouse owner", s3_d: "Publishes free space and receives storage requests.",
+    cta_t: "Start with Hosil X today", cta_b: "Sign up for free", ad_label: "Ad", admin_c: "Content" },
+};
