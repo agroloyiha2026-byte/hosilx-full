@@ -53,6 +53,8 @@ export default function Login() {
     <main className="container" style={{ maxWidth: 440, padding: "40px 20px" }}>
       <form className="card" style={{ padding: 24, gap: 12 }} onSubmit={submit}>
         <h2 style={{ margin: 0 }}>{mode === "in" ? t("signin") : t("signup")}</h2>
+        <button type="button" className="btn ghost" onClick={google}>G&nbsp; {t("google")}</button>
+        <span className="soft" style={{ textAlign: "center" }}>— {t("or")} —</span>
         {mode === "up" && (
           <>
             <input required placeholder={t("full_name")} value={name} onChange={(e) => setName(e.target.value)} />
