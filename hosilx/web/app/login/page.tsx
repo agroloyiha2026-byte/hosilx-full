@@ -13,7 +13,14 @@ export default function Login() {
   const [name, setName] = useState("");
   const [role, setRole] = useState("farmer");
   const [msg, setMsg] = useState<{ text: string; ok?: boolean } | null>(null);
-  const [busy, setBusy] = useState(false);
+    const [busy, setBusy] = useState(false);
+
+  async function google() {
+    setMsg(null);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google", options: { redirectTo: `${window.location.origin}/dashboard` } });
+    if (error) setMsg({ text: t("err_generic") });
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
