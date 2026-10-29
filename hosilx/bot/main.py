@@ -20,7 +20,7 @@ from aiohttp import web
 
 logging.basicConfig(level=logging.INFO)
 sb = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_KEY"])
-WEB_URL = os.environ.get("WEB_URL", "https://hosilx.vercel.app")
+WEB_URL = os.environ.get("WEB_URL", "https://hosilx-full.vercel.app/")
 router = Router()
 
 T = {
