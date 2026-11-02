@@ -1,10 +1,27 @@
 """Hosil X Telegram boti. Ishga tushirish: python -m bot.main  (BOT_MODE=polling yoki webhook)."""
 from __future__ import annotations
 
+import sys
+
+if not __package__:
+    # "python main.py" bilan (papka nomi qanday bo'lmasin) ishga tushirilsa, shu papka "bot" paketi sifatida ulanadi va
+    # nisbiy importlar ishlaydi. To'g'ri joylashuvda ham ishlaydi: "python -m bot.main".
+    import asyncio as _asyncio
+    import types as _types
+    from importlib import import_module as _import_module
+    from pathlib import Path as _Path
+
+    _here = _Path(__file__).resolve().parent
+    sys.path[:] = [_p for _p in sys.path if _Path(_p or ".").resolve() != _here]  # config.py, utils/ kabi nomlar begona kutubxonalarni to'smasin
+    _pkg = _types.ModuleType("bot")
+    _pkg.__path__ = [str(_here)]
+    _pkg.__package__ = "bot"
+    sys.modules["bot"] = _pkg
+    sys.exit(_asyncio.run(_import_module("bot.main").main()))
+
 import asyncio
 import logging
 import os
-import sys
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
