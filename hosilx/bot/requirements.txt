@@ -1,2 +1,0 @@
-aiogram>=3.10
-supabase>=2.5
