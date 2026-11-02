@@ -153,6 +153,12 @@ class Config(unittest.TestCase):
         with self.assertRaises(ConfigError):
             load_settings({k: x for k, x in ENV.items() if k != "SUPABASE_SERVICE_KEY"})
 
+    def test_old_bot_token_name_is_accepted(self):
+        env = {k: x for k, x in ENV.items() if k != "TELEGRAM_BOT_TOKEN"}
+        self.assertEqual(load_settings({**env, "BOT_TOKEN": TOKEN}).bot_token, TOKEN)
+        with self.assertRaises(ConfigError):
+            load_settings(env)
+
     def test_webhook(self):
         s = load_settings({**ENV, "BOT_MODE": "webhook", "WEBHOOK_URL": "https://bot.onrender.com/", "WEBHOOK_SECRET": "a" * 20})
         self.assertEqual(s.webhook_url, "https://bot.onrender.com")
@@ -212,3 +218,44 @@ class Prices(unittest.TestCase):
         self.assertEqual((r[0]["min_price"], r[0]["median_price"], r[0]["max_price"]), (100, 200, 300))
         self.assertEqual(r[0]["last_date"], "2026-01-05")
         self.assertEqual(price_stats([]), [])  # ma'lumot yo'q: bo'sh natija, narx o'ylab topilmaydi
+
+
+class Keepalive(unittest.TestCase):
+    def test_legacy_token_name_and_url_resolution(self):
+        from bot.config import resolve_keepalive_url
+        env = {k: x for k, x in ENV.items() if k != "TELEGRAM_BOT_TOKEN"}
+        self.assertEqual(load_settings({**env, "BOT_TOKEN": TOKEN}).bot_token, TOKEN)   # eski bot nomi ham ishlaydi
+        self.assertEqual(resolve_keepalive_url({"RENDER_EXTERNAL_URL": "https://bot.onrender.com/"}), "https://bot.onrender.com")
+        self.assertEqual(resolve_keepalive_url({"KEEPALIVE_URL": "https://a.b", "RENDER_EXTERNAL_URL": "https://c.d"}), "https://a.b")
+        self.assertEqual(resolve_keepalive_url({"RENDER_EXTERNAL_URL": "https://x.y", "KEEPALIVE": "off"}), "")
+        self.assertEqual(resolve_keepalive_url({"RENDER_EXTERNAL_URL": "http://x.y"}), "")   # faqat https
+        self.assertEqual(resolve_keepalive_url({}), "")
+        s = load_settings({**ENV, "RENDER_EXTERNAL_URL": "https://bot.onrender.com"})
+        self.assertEqual((s.keepalive_url, s.keepalive_interval), ("https://bot.onrender.com", 600))
+        for bad in ("30", "900", "abc"):
+            with self.assertRaises(ConfigError, msg=bad):
+                load_settings({**ENV, "KEEPALIVE_INTERVAL": bad})
+
+    def test_loop_pings_health_and_survives_errors(self):
+        import asyncio
+        from bot.services.keepalive import keepalive_loop
+
+        async def scenario():
+            calls, stop = [], asyncio.Event()
+
+            async def fetch(url):
+                calls.append(url)
+                if len(calls) == 2:
+                    raise RuntimeError("tarmoq xatosi")      # sikl to'xtamasligi kerak
+                return 200 if len(calls) != 3 else 503
+
+            task = asyncio.create_task(keepalive_loop("https://bot.onrender.com/", 0.01, stop, fetch, initial_delay=0))
+            await asyncio.sleep(0.15)
+            stop.set()
+            ok = await asyncio.wait_for(task, 2)
+            return calls, ok
+
+        calls, ok = asyncio.run(scenario())
+        self.assertGreaterEqual(len(calls), 5)
+        self.assertTrue(all(c == "https://bot.onrender.com/health" for c in calls))
+        self.assertGreaterEqual(ok, 3)                       # xato va 503 dan keyin ham muvaffaqiyatli chaqiruvlar davom etadi
