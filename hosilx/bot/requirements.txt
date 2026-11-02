@@ -1,0 +1,5 @@
+aiogram>=3.13,<4
+supabase>=2.5,<3
+aiohttp>=3.9
+# Ixtiyoriy: FSM holatini qayta ishga tushganda saqlash uchun (REDIS_URL kiritilsa)
+redis>=5
