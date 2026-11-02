@@ -15,7 +15,7 @@ bot/
   services/          ai (adapter), notifier (bildirishnoma/eslatma), summary
   utils/             toza funksiyalar: validators, finance, prices, registration, links, notify, ai_prompts, pagination, regions, ratelimit
 supabase/migration12_telegram_bot.sql
-tests/               52 test
+tests/               55 test
 ```
 
 ## Ro'yxatdan o'tish va hisobni ulash (qaror va sabab)
@@ -63,8 +63,9 @@ python -m unittest discover -s tests -t .     # testlar (internet va kalit kerak
 Bir token uchun bir vaqtda faqat BITTA polling nusxasi ishlashi kerak (aks holda 409 Conflict). Eski botni (`hosilx/bot`) to'xtating.
 
 ## Deploy (Render)
-`render.yaml` tayyor. Environment'ga `.env.example` dagi nomlar kiritiladi (kalitlar `sync: false`). **Bepul web xizmati 15 daqiqada uxlaydi**: polling to'xtaydi; webhook rejimida (`BOT_MODE=webhook`, `WEBHOOK_URL`, `WEBHOOK_SECRET`) Telegram so'rovi uyg'otadi, lekin eslatma ishchisi uxlagan paytda ishlamaydi. FSM holatini saqlash uchun `REDIS_URL` bering, aks holda qayta ishga tushganda yarim qolgan formalar (ro'yxatdan o'tish bundan mustasno, u bazada) yo'qoladi. Health: `GET /health`.
+To'liq yo'riqnoma: `docs/DEPLOY_RENDER.md` ("requirements.txt topilmadi" xatosi: **Root Directory** bot papkasiga qaratilishi kerak). Start: `python -m bot.main`, Python 3.12 (`PYTHON_VERSION=3.12.8`), health: `/health`.
+**Uxlab qolish:** bepul web xizmati 15 daqiqa tashqi trafiksiz uxlaydi. Bot `RENDER_EXTERNAL_URL/health` ni har 10 daqiqada o'zi chaqiradi (keep-alive) va uptimerobot.com'da qo'shimcha monitor tavsiya etiladi; lekin bepul tarifda doimiy ishlash KAFOLATLANMAGAN: kafolat uchun pullik tarif. FSM holatini saqlash uchun `REDIS_URL` bering.
 
 ## Tekshiruvlar
-Bajarilgan: 52 test (validatorlar, sozlamalar, sana/vaqt, moliya hisobi, narx, bildirishnoma qoidalari, ro'yxatdan o'tish mantig'i, tezlik cheklovi, soxta Supabase bilan egalik/ko'rinish/idempotentlik/ulash kodi, 3 til paritetini va kodda ishlatilgan har bir matn kaliti borligini tekshirish, import tutun testi).
+Bajarilgan: 55 test (validatorlar, sozlamalar, sana/vaqt, moliya hisobi, narx, bildirishnoma qoidalari, ro'yxatdan o'tish mantig'i, tezlik cheklovi, soxta Supabase bilan egalik/ko'rinish/idempotentlik/ulash kodi, 3 til paritetini va kodda ishlatilgan har bir matn kaliti borligini tekshirish, import tutun testi).
 **Bajarilmagan:** haqiqiy aiogram bilan handlerlarni ishga tushirish, haqiqiy Supabase/Telegram/AI bilan sinov (bu muhitda paket va tarmoq yo'q). Mock testlar o'tishi deployment ishlashini isbotlamaydi.

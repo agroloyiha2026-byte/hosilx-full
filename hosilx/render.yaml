@@ -1,22 +1,21 @@
-# Render Blueprint. DIQQAT: bepul "web" xizmati 15 daqiqa trafiksiz qolsa uxlaydi.
-#  - polling rejimida uxlagan bot xabarlarga javob bermaydi va eslatmalar yuborilmaydi;
-#  - webhook rejimida Telegram so'rovi xizmatni uyg'otadi (birinchi javob sekin), lekin eslatma/bildirishnoma ishchisi uxlab turgan paytda to'xtaydi.
-# Ishonchli ishlash uchun pullik tarif (yoki Background Worker + polling) tavsiya etiladi.
+# Render Blueprint (ixtiyoriy: dashboard'dan qo'lda ham sozlash mumkin, docs/DEPLOY_RENDER.md ga qarang).
 services:
   - type: web
     name: hosilx-bot
     runtime: python
-    plan: starter
+    plan: free                  # bepul. Kafolatli doimiy ishlash uchun: starter (pullik)
+    rootDir: hosil-x-bot        # <- requirements.txt va bot/ papkasi turgan papka (repository ichidagi yo'l). O'zingiznikiga moslang
     buildCommand: pip install -r requirements.txt
     startCommand: python -m bot.main
     healthCheckPath: /health
     envVars:
-      - {key: PYTHON_VERSION, value: "3.12.3"}
+      - {key: PYTHON_VERSION, value: "3.12.8"}      # Render standarti 3.14: aiogram bog'liqliklari uchun 3.12 xavfsizroq
       - {key: BOT_MODE, value: polling}
-      - {key: TELEGRAM_BOT_TOKEN, sync: false}
+      - {key: TELEGRAM_BOT_TOKEN, sync: false}      # eski nom BOT_TOKEN ham qabul qilinadi
       - {key: SUPABASE_URL, sync: false}
       - {key: SUPABASE_SERVICE_KEY, sync: false}
       - {key: WEB_URL, sync: false}
       - {key: ANTHROPIC_API_KEY, sync: false}
       - {key: AI_MODEL, sync: false}
       - {key: FINANCE_EXTENDED_CATEGORIES, value: "false"}
+      # keep-alive: RENDER_EXTERNAL_URL ni Render o'zi beradi, qo'shimcha sozlama shart emas (o'chirish: KEEPALIVE=off)
