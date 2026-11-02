@@ -27,6 +27,8 @@ class Settings:
     ai_daily_limit: int = 50
     finance_extended: bool = False        # migration10 (kengaytirilgan moliya turkumlari) qo'llangan bo'lsa true
     log_level: str = "INFO"
+    keepalive_url: str = ""               # bo'sh bo'lmasa bot shu manzilning /health ini muntazam chaqiradi (uxlab qolmasligi uchun)
+    keepalive_interval: int = 600         # soniya; Render 15 daqiqada uxlatadi, shuning uchun 60..840
 
     def __repr__(self) -> str:  # kalitlar tasodifan chop etilmasin
         return f"Settings(mode={self.mode!r}, supabase_url={self.supabase_url!r}, web_url={self.web_url!r}, secrets=***)"
@@ -36,6 +38,14 @@ def _bool(v: str) -> bool:
     return v.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def resolve_keepalive_url(env: Mapping[str, str]) -> str:
+    """KEEPALIVE_URL yoki Render bergan RENDER_EXTERNAL_URL. KEEPALIVE=off bo'lsa yoki https bo'lmasa bo'sh."""
+    if (env.get("KEEPALIVE") or "").strip().lower() in {"0", "false", "off", "no"}:
+        return ""
+    url = (env.get("KEEPALIVE_URL") or env.get("RENDER_EXTERNAL_URL") or "").strip().rstrip("/")
+    return url if url.startswith("https://") else ""
+
+
 def load_settings(env: Mapping[str, str]) -> Settings:
     def need(name: str) -> str:
         v = (env.get(name) or "").strip()
@@ -43,7 +53,10 @@ def load_settings(env: Mapping[str, str]) -> Settings:
             raise ConfigError(f"{name} kiritilmagan")
         return v
 
-    token = need("TELEGRAM_BOT_TOKEN")
+    # Eski botdagi BOT_TOKEN nomi ham qabul qilinadi (mavjud Render sozlamasi buzilmasin)
+    token = (env.get("TELEGRAM_BOT_TOKEN") or env.get("BOT_TOKEN") or "").strip()
+    if not token:
+        raise ConfigError("TELEGRAM_BOT_TOKEN kiritilmagan")
     if not re.fullmatch(r"\d{5,}:[A-Za-z0-9_-]{20,}", token):
         raise ConfigError("TELEGRAM_BOT_TOKEN formati noto'g'ri")
     url = need("SUPABASE_URL").rstrip("/")
@@ -65,12 +78,16 @@ def load_settings(env: Mapping[str, str]) -> Settings:
     try:
         port = int(env.get("PORT") or 10000)
         limit = int(env.get("AI_DAILY_LIMIT") or 50)
+        interval = int(env.get("KEEPALIVE_INTERVAL") or 600)
     except ValueError as e:
-        raise ConfigError("PORT va AI_DAILY_LIMIT butun son bo'lishi kerak") from e
+        raise ConfigError("PORT, AI_DAILY_LIMIT va KEEPALIVE_INTERVAL butun son bo'lishi kerak") from e
+    if not 60 <= interval <= 840:
+        raise ConfigError("KEEPALIVE_INTERVAL 60 dan 840 soniyagacha bo'lishi kerak (Render 15 daqiqada uxlatadi)")
     return Settings(
         bot_token=token, supabase_url=url, supabase_service_key=need("SUPABASE_SERVICE_KEY"), web_url=web_url, mode=mode,
         webhook_url=webhook_url, webhook_secret=secret, port=port, redis_url=(env.get("REDIS_URL") or "").strip(),
         anthropic_api_key=(env.get("ANTHROPIC_API_KEY") or "").strip(), ai_model=(env.get("AI_MODEL") or "").strip(),
         ai_daily_limit=limit, finance_extended=_bool(env.get("FINANCE_EXTENDED_CATEGORIES") or ""),
         log_level=(env.get("LOG_LEVEL") or "INFO").strip().upper(),
+        keepalive_url=resolve_keepalive_url(env), keepalive_interval=interval,
     )

@@ -20,6 +20,7 @@ from .handlers import ai, fallback, finance, market, menu, planner, profile, rep
 from .middlewares import Throttle, UserContext, on_error
 from .repositories import Repo
 from .services.ai import build_provider
+from .services.keepalive import keepalive_loop
 from .services.notifier import notifier_loop
 
 log = logging.getLogger("bot")
@@ -92,6 +93,8 @@ async def main() -> int:
 
     stop = asyncio.Event()
     notifier = asyncio.create_task(notifier_loop(bot, repo, stop))
+    keepalive = asyncio.create_task(keepalive_loop(s.keepalive_url, s.keepalive_interval, stop)) if s.keepalive_url else None
+    log.info("keepalive: %s", f"yoqilgan ({s.keepalive_url}, har {s.keepalive_interval} s)" if keepalive else "o'chiq (bepul Render'da xizmat 15 daqiqada uxlaydi)")
     code = 0
     try:
         if s.mode == "polling":
@@ -106,6 +109,8 @@ async def main() -> int:
     finally:
         stop.set()
         await notifier
+        if keepalive:
+            await keepalive
         await bot.session.close()
         await runner.cleanup()
     return code
