@@ -1,0 +1,22 @@
+# Render Blueprint. DIQQAT: bepul "web" xizmati 15 daqiqa trafiksiz qolsa uxlaydi.
+#  - polling rejimida uxlagan bot xabarlarga javob bermaydi va eslatmalar yuborilmaydi;
+#  - webhook rejimida Telegram so'rovi xizmatni uyg'otadi (birinchi javob sekin), lekin eslatma/bildirishnoma ishchisi uxlab turgan paytda to'xtaydi.
+# Ishonchli ishlash uchun pullik tarif (yoki Background Worker + polling) tavsiya etiladi.
+services:
+  - type: web
+    name: hosilx-bot
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m bot.main
+    healthCheckPath: /health
+    envVars:
+      - {key: PYTHON_VERSION, value: "3.12.3"}
+      - {key: BOT_MODE, value: polling}
+      - {key: TELEGRAM_BOT_TOKEN, sync: false}
+      - {key: SUPABASE_URL, sync: false}
+      - {key: SUPABASE_SERVICE_KEY, sync: false}
+      - {key: WEB_URL, sync: false}
+      - {key: ANTHROPIC_API_KEY, sync: false}
+      - {key: AI_MODEL, sync: false}
+      - {key: FINANCE_EXTENDED_CATEGORIES, value: "false"}
