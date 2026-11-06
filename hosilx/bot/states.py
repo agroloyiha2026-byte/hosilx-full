@@ -41,3 +41,11 @@ class Fin(StatesGroup):
 
 class AiS(StatesGroup):
     chat = State()
+
+
+class Svc(StatesGroup):
+    query = State(); request = State(); field = State(); confirm = State()
+
+
+class Diary(StatesGroup):
+    step = State(); confirm = State()

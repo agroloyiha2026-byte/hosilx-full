@@ -8,10 +8,25 @@ from typing import Any
 from .db import Db
 from .utils.links import is_expired
 from .utils.pagination import db_window, split_extra
+from .services.specs import SPECS
 from .utils.validators import SELF_REGISTER_ROLES, sanitize_search
 
 PRODUCT_COLS = "id,title,category,product_type,price,currency,unit,quantity,region,image_url,seller_id,created_at"
 WH_COLS = "id,name,region,address,storage_type,capacity_tons,free_tons,price_per_ton_month,currency,accepted_products,conditions,contact_phone,owner_id"
+
+
+SVC_TABLES = {sp.table for sp in SPECS.values()}   # umumiy mexanizm faqat shu jadvallar bilan ishlaydi (jadval nomi tashqaridan kelmaydi)
+
+
+def _svc(table: str) -> str:
+    if table not in SVC_TABLES:
+        raise ValueError("ruxsat etilmagan jadval")
+    return table
+
+
+def _allowed_cols(table: str) -> set[str]:
+    sp = next(x for x in SPECS.values() if x.table == table)
+    return {f.key for f in sp.fields} | ({sp.parent_col} if sp.parent_col else set())
 
 
 class Repo:
@@ -277,3 +292,140 @@ class Repo:
             return {}
         rows = await self._q(lambda c: c.table("profiles").select("id,telegram_id,telegram_notify,telegram_linked_at,language").in_("id", ids).execute())
         return {r["id"]: r for r in rows}
+
+    # ---------- umumiy e'lonlar: agroapteka, texnika ijarasi, logistika ----------
+    async def visible_pharmacy_ids(self, region: str | None = None, store_id: str | None = None) -> list[str]:
+        def run(c):
+            q = c.table("pharmacies").select("id").eq("status", "active").eq("moderation_status", "approved")
+            if store_id:
+                q = q.eq("id", store_id)
+            r = sanitize_search(region)
+            if r:
+                q = q.ilike("region", f"%{r}%")
+            return q.limit(200).execute()
+
+        return [x["id"] for x in await self._q(run)]
+
+    async def svc_public(self, table: str, *, q: str = "", q_cols=(), region: str | None = None, region_col: str | None = None, eq: dict | None = None,
+                         moderated: bool = True, in_col: str | None = None, in_vals: list | None = None, page: int = 0, size: int = 5) -> tuple[list[dict], bool]:
+        """Ommaga ko'rinadigan e'lonlar: faqat faol (va moderatsiyadan o'tgan)."""
+        _svc(table)
+        if in_col and not in_vals:
+            return [], False
+        start, end = db_window(page, size)
+
+        def run(c):
+            qq = c.table(table).select("*").eq("status", "active")
+            if moderated:
+                qq = qq.eq("moderation_status", "approved")
+            for k, v in (eq or {}).items():
+                qq = qq.eq(k, v)
+            if in_col:
+                qq = qq.in_(in_col, in_vals)
+            t = sanitize_search(q)
+            if t and q_cols:
+                qq = qq.or_(",".join(f"{col}.ilike.%{t}%" for col in q_cols))
+            r = sanitize_search(region)
+            if r and region_col:
+                qq = qq.ilike(region_col, f"%{r}%")
+            return qq.order("created_at", desc=True).range(start, end).execute()
+
+        return split_extra(await self._q(run), size)
+
+    async def svc_get(self, table: str, rid: str, moderated: bool = True) -> dict | None:
+        _svc(table)
+
+        def run(c):
+            q = c.table(table).select("*").eq("id", rid).eq("status", "active")
+            return (q.eq("moderation_status", "approved") if moderated else q).limit(1).execute()
+
+        d = await self._q(run)
+        return d[0] if d else None
+
+    async def svc_get_own(self, table: str, uid: str, rid: str) -> dict | None:
+        _svc(table)
+        d = await self._q(lambda c: c.table(table).select("*").eq("id", rid).eq("owner_id", uid).limit(1).execute())
+        return d[0] if d else None
+
+    async def svc_mine(self, table: str, uid: str, page: int = 0, size: int = 5) -> tuple[list[dict], bool]:
+        _svc(table)
+        start, end = db_window(page, size)
+        rows = await self._q(lambda c: c.table(table).select("*").eq("owner_id", uid).order("created_at", desc=True).range(start, end).execute())
+        return split_extra(rows, size)
+
+    async def svc_insert(self, table: str, uid: str, data: dict) -> str:
+        _svc(table)
+        extra = set(data) - _allowed_cols(table)
+        if extra:
+            raise ValueError(f"ruxsat etilmagan maydonlar: {sorted(extra)}")
+        d = await self._q(lambda c: c.table(table).insert({**data, "owner_id": uid}).execute())
+        return d[0]["id"]
+
+    async def svc_toggle(self, table: str, uid: str, rid: str) -> str | None:
+        _svc(table)
+        d = await self._q(lambda c: c.table(table).select("status").eq("id", rid).eq("owner_id", uid).limit(1).execute())
+        if not d:
+            return None  # boshqaning e'loni: o'zgartirilmaydi
+        new = "hidden" if d[0]["status"] == "active" else "active"
+        await self._q(lambda c: c.table(table).update({"status": new}).eq("id", rid).eq("owner_id", uid).execute())
+        return new
+
+    async def svc_delete(self, table: str, uid: str, rid: str) -> bool:
+        _svc(table)
+        return bool(await self._q(lambda c: c.table(table).delete().eq("id", rid).eq("owner_id", uid).execute()))
+
+    async def svc_titles(self, table: str, col: str, ids: list[str]) -> dict[str, str]:
+        _svc(table)
+        if not ids:
+            return {}
+        rows = await self._q(lambda c: c.table(table).select(f"id,{col}").in_("id", ids).execute())
+        return {r["id"]: r[col] for r in rows}
+
+    async def names(self, ids: list[str]) -> dict[str, str]:
+        if not ids:
+            return {}
+        rows = await self._q(lambda c: c.table("profiles").select("id,full_name").in_("id", ids).execute())
+        return {r["id"]: r.get("full_name") or "" for r in rows}
+
+    async def req_create(self, kind: str, target_id: str, requester: str, owner: str, message: str, details: dict | None = None) -> None:
+        await self._q(lambda c: c.table("service_requests").insert({"kind": kind, "target_id": target_id, "requester_id": requester, "owner_id": owner,
+                                                                    "message": message, "details": details or {}}).execute())
+
+    async def req_inbox(self, owner: str, kind: str, limit: int = 8) -> list[dict]:
+        return await self._q(lambda c: c.table("service_requests").select("id,target_id,requester_id,message,created_at").eq("owner_id", owner)
+                             .eq("kind", kind).eq("status", "new").order("created_at", desc=True).limit(limit).execute())
+
+    async def req_set_status(self, owner: str, rid: str, status: str) -> bool:
+        if status not in ("accepted", "rejected", "done"):
+            return False
+        return bool(await self._q(lambda c: c.table("service_requests").update({"status": status}).eq("id", rid).eq("owner_id", owner).execute()))
+
+    async def svc_report(self, uid: str, kind: str, target_id: str, reason: str) -> None:
+        await self._q(lambda c: c.table("service_reports").insert({"reporter_id": uid, "target_kind": kind, "target_id": target_id, "reason": reason[:500]}).execute())
+
+    # ---------- dala daftari ----------
+    async def fields(self, uid: str) -> list[dict]:
+        return await self._q(lambda c: c.table("farm_fields").select("*").eq("user_id", uid).order("created_at", desc=True).limit(30).execute())
+
+    async def add_field(self, uid: str, data: dict) -> str:
+        d = await self._q(lambda c: c.table("farm_fields").insert({**data, "user_id": uid}).execute())
+        return d[0]["id"]
+
+    async def get_field(self, uid: str, fid: str) -> dict | None:
+        d = await self._q(lambda c: c.table("farm_fields").select("*").eq("id", fid).eq("user_id", uid).limit(1).execute())
+        return d[0] if d else None
+
+    async def delete_field(self, uid: str, fid: str) -> bool:
+        return bool(await self._q(lambda c: c.table("farm_fields").delete().eq("id", fid).eq("user_id", uid).execute()))
+
+    async def add_field_entry(self, uid: str, data: dict, client_ref: str) -> None:
+        await self._q(lambda c: c.table("field_entries").upsert({**data, "user_id": uid, "client_ref": client_ref},
+                                                                on_conflict="user_id,client_ref", ignore_duplicates=True).execute())
+
+    async def field_entries(self, uid: str, fid: str, limit: int = 8) -> list[dict]:
+        return await self._q(lambda c: c.table("field_entries").select("*").eq("user_id", uid).eq("field_id", fid)
+                             .order("entry_date", desc=True).order("created_at", desc=True).limit(limit).execute())
+
+    async def entries_since(self, uid: str, start_iso: str) -> list[dict]:
+        return await self._q(lambda c: c.table("field_entries").select("field_id,kind,amount,unit,cost,currency,entry_date")
+                             .eq("user_id", uid).gte("entry_date", start_iso).limit(3000).execute())

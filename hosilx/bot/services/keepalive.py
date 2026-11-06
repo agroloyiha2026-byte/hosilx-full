@@ -22,7 +22,7 @@ async def keepalive_loop(url: str, interval: float, stop: asyncio.Event, fetch: 
                          initial_delay: float = 30.0) -> int:
     """Muvaffaqiyatli chaqiruvlar sonini qaytaradi (test uchun). Xatolar siklni to'xtatmaydi."""
     target = url.rstrip("/") + "/health"
-    ok = 0
+    ok = fails = 0
     try:  # birinchi chaqiruvdan oldin xizmat ommaviy manzilda tayyor bo'lishi uchun kutiladi
         await asyncio.wait_for(stop.wait(), timeout=initial_delay)
     except asyncio.TimeoutError:
@@ -31,11 +31,18 @@ async def keepalive_loop(url: str, interval: float, stop: asyncio.Event, fetch: 
         try:
             status = await fetch(target)
             if status < 400:
+                if ok == 0:
+                    log.info("keepalive: birinchi chaqiruv muvaffaqiyatli (%s)", target)
                 ok += 1
+                fails = 0
             else:
+                fails += 1
                 log.warning("keepalive: javob statusi %s", status)
         except Exception as e:
+            fails += 1
             log.warning("keepalive xatosi: %s", type(e).__name__)
+        if fails == 3:  # bir marta, spam bo'lmasin
+            log.warning("keepalive 3 marta ketma-ket ishlamadi: RENDER_EXTERNAL_URL / KEEPALIVE_URL ni tekshiring (%s)", target)
         try:
             await asyncio.wait_for(stop.wait(), timeout=interval)
         except asyncio.TimeoutError:

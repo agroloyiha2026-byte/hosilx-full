@@ -22,6 +22,7 @@ if not __package__:
 import asyncio
 import logging
 import os
+import time
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
@@ -33,8 +34,8 @@ from aiohttp import web
 
 from .config import ConfigError, Settings, load_settings
 from .db import Db
-from .handlers import ai, fallback, finance, market, menu, planner, profile, reports, start, warehouses
-from .middlewares import Throttle, UserContext, on_error
+from .handlers import ai, diary, fallback, finance, market, menu, planner, profile, reports, services, start, warehouses
+from .middlewares import Heartbeat, Throttle, UserContext, on_error
 from .repositories import Repo
 from .services.ai import build_provider
 from .services.keepalive import keepalive_loop
@@ -61,21 +62,25 @@ def make_storage(s: Settings):
     return MemoryStorage()
 
 
-def build_dispatcher(s: Settings, repo: Repo) -> tuple[Dispatcher, UserContext]:
+def build_dispatcher(s: Settings, repo: Repo, stats: dict | None = None) -> tuple[Dispatcher, UserContext]:
     dp = Dispatcher(storage=make_storage(s))
     ctx = UserContext(repo)
     dp["repo"], dp["settings"], dp["ai"], dp["ctx"] = repo, s, build_provider(s), ctx
     for obs in (dp.message, dp.callback_query):
+        obs.outer_middleware(Heartbeat(stats if stats is not None else {}))
         obs.outer_middleware(Throttle())
         obs.outer_middleware(ctx)
     # Tartib muhim: menyu tugmalari FSM holatlaridan oldin tutiladi; fallback eng oxirida
-    dp.include_routers(menu.router, start.router, market.router, warehouses.router, planner.router, finance.router, ai.router, profile.router, reports.router, fallback.router)
+    dp.include_routers(menu.router, start.router, market.router, warehouses.router, planner.router, finance.router, services.router, diary.router, ai.router, profile.router, reports.router, fallback.router)
     dp.errors.register(on_error)
     return dp, ctx
 
 
 async def health(request: web.Request) -> web.Response:
-    return web.json_response({"ok": True, "mode": request.app["mode"]})
+    st = request.app["stats"]
+    last = st.get("last")
+    return web.json_response({"ok": True, "mode": request.app["mode"], "uptime_s": int(time.monotonic() - request.app["started"]),
+                              "updates": st.get("updates", 0), "last_update_s_ago": None if last is None else int(time.monotonic() - last)})
 
 
 async def main() -> int:
@@ -90,12 +95,13 @@ async def main() -> int:
 
     repo = Repo(Db(s.supabase_url, s.supabase_service_key))
     bot = Bot(s.bot_token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-    dp, _ = build_dispatcher(s, repo)
+    stats: dict = {"updates": 0, "last": None}
+    dp, _ = build_dispatcher(s, repo, stats)
     for lang, cmds in COMMANDS.items():
         await bot.set_my_commands([BotCommand(command=c, description=d) for c, d in cmds], language_code=None if lang == "uz" else lang)
 
     app = web.Application()
-    app["mode"] = s.mode
+    app["mode"], app["stats"], app["started"] = s.mode, stats, time.monotonic()
     app.router.add_get("/health", health)
     app.router.add_get("/", health)
     if s.mode == "webhook":

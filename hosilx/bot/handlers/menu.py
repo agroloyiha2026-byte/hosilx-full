@@ -43,8 +43,8 @@ def _planned(key: str):
     return handler
 
 
-# Bazada (ilova/sayt bilan umumiy) bu modullar uchun jadval yo'q: bot ularni uydirmaydi.
-for _k in ("m_logistics", "m_machinery", "m_agro", "m_diary", "m_passport"):
+# Hosil Pasporti: ochiq tekshiruv sahifasi (sayt) va QR xizmati yo'q, shuning uchun bot uni uydirmaydi.
+for _k in ("m_passport",):
     router.message(F.text.in_(menu_texts(_k)))(_planned(_k))
 
 

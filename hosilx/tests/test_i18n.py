@@ -63,6 +63,21 @@ class I18n(unittest.TestCase):
         dyn += ["notif_new_inquiry", "notif_product_approved", "notif_product_rejected", "reminder"]
         self.assertEqual(sorted(k for k in dyn if not has_key(k)), [])
 
+    def test_module_keys_exist_for_every_spec_field_choice_and_diary_item(self):
+        from bot.services.specs import SPECS
+        from bot.utils.diary import ENTRY_KINDS, UNITS
+        need = ["yes", "no"]
+        for sp in SPECS.values():
+            need.append(f"{sp.key}_title")
+            for f in sp.fields:
+                need.append(f"fl_{f.key}")
+                if f.kind == "choice" and f.key != "currency":
+                    need += [f"ch_{c}" for c in f.choices]
+        need += [f"dk_{k}" for k in ENTRY_KINDS] + [f"du_{u}" for u in UNITS]
+        need += [f"dl_{k}" for k in ("name", "area_ha", "crop", "sown_on", "kind", "entry_date", "amount", "unit", "cost", "note")]
+        need += [f"notif_service_request_{s}" for s in ("accepted", "rejected", "done")] + ["notif_new_service_request"]
+        self.assertEqual(sorted(k for k in need if not has_key(k)), [])
+
     def test_menu_buttons_are_unique_across_languages(self):
         seen: dict[str, str] = {}
         for k in MENU:

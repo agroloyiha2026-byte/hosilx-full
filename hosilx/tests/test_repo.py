@@ -189,3 +189,72 @@ class Draft(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Services(unittest.TestCase):
+    def test_unknown_table_rejected(self):
+        r, c = mk()
+        for coro in (r.svc_public("profiles"), r.svc_toggle("profiles", "u", "x"), r.svc_delete("products", "u", "x"), r.svc_get("tasks", "x")):
+            with self.assertRaises(ValueError):
+                run(coro)
+        self.assertEqual(c.log, [])  # baza chaqirilmagan
+
+    def test_public_filters(self):
+        r, c = mk({"machinery_listings": []})
+        run(r.svc_public("machinery_listings", q="trak,(tor)", q_cols=("title", "description"), region="Samarqand", region_col="region", eq={"kind": "tractor"}))
+        calls = c.log[0][1]
+        self.assertTrue(has(calls, "eq", "status", "active"))
+        self.assertTrue(has(calls, "eq", "moderation_status", "approved"))
+        self.assertTrue(has(calls, "eq", "kind", "tractor"))
+        self.assertTrue(has(calls, "ilike", "region"))
+        or_arg = next(a[0] for m, a, _ in calls if m == "or_")
+        self.assertNotIn("(", or_arg)
+        r, c = mk({"pharmacy_items": []})
+        run(r.svc_public("pharmacy_items", moderated=False, in_col="pharmacy_id", in_vals=["p1"]))
+        self.assertFalse(has(c.log[0][1], "eq", "moderation_status", "approved"))
+        self.assertTrue(has(c.log[0][1], "in_", "pharmacy_id"))
+
+    def test_items_without_visible_pharmacies_return_nothing_without_query(self):
+        r, c = mk()
+        self.assertEqual(run(r.svc_public("pharmacy_items", moderated=False, in_col="pharmacy_id", in_vals=[])), ([], False))
+        self.assertEqual(c.log, [])
+
+    def test_insert_sets_owner_and_rejects_unknown_columns(self):
+        r, c = mk({"freight_listings": [{"id": "n1"}]})
+        self.assertEqual(run(r.svc_insert("freight_listings", "me", {"title": "KamAZ", "capacity_tons": 10})), "n1")
+        (_, args, _kw) = next(x for x in c.log[0][1] if x[0] == "insert")
+        self.assertEqual(args[0]["owner_id"], "me")
+        for bad in ({"moderation_status": "approved"}, {"owner_id": "other"}, {"status": "active"}):
+            with self.assertRaises(ValueError):          # egasi o'zini tasdiqlay/boshqa egaga yoza olmaydi
+                run(r.svc_insert("freight_listings", "me", bad))
+
+    def test_toggle_and_delete_are_owner_scoped(self):
+        r, c = mk({"pharmacies": []})
+        self.assertIsNone(run(r.svc_toggle("pharmacies", "me", "p1")))
+        self.assertEqual(len(c.log), 1)
+        r, c = mk({"pharmacies": Seq([[{"status": "hidden"}], []])})
+        self.assertEqual(run(r.svc_toggle("pharmacies", "me", "p1")), "active")
+        self.assertTrue(has(c.log[1][1], "eq", "owner_id", "me"))
+        r, c = mk({"pharmacies": []})
+        self.assertFalse(run(r.svc_delete("pharmacies", "me", "p1")))
+        self.assertTrue(has(c.log[0][1], "eq", "owner_id", "me"))
+
+    def test_request_status_owner_scoped_and_whitelisted(self):
+        r, c = mk({"service_requests": [{"id": "r1"}]})
+        self.assertTrue(run(r.req_set_status("me", "r1", "accepted")))
+        self.assertTrue(has(c.log[0][1], "eq", "owner_id", "me"))
+        r, c = mk()
+        self.assertFalse(run(r.req_set_status("me", "r1", "new")))
+        self.assertEqual(c.log, [])
+        r, c = mk({"service_requests": []})
+        self.assertFalse(run(r.req_set_status("not-owner", "r1", "rejected")))   # egasi bo'lmasa hech narsa o'zgarmaydi
+
+    def test_diary_is_user_scoped_and_idempotent(self):
+        r, c = mk({"farm_fields": [], "field_entries": []})
+        self.assertFalse(run(r.delete_field("me", "f1")))
+        self.assertTrue(has(c.log[0][1], "eq", "user_id", "me"))
+        run(r.field_entries("me", "f1"))
+        self.assertTrue(has(c.log[1][1], "eq", "user_id", "me"))
+        run(r.add_field_entry("me", {"kind": "harvest"}, "tg:abc"))
+        (_, args, kw) = next(x for x in c.log[2][1] if x[0] == "upsert")
+        self.assertEqual((args[0]["user_id"], args[0]["client_ref"], kw["on_conflict"]), ("me", "tg:abc", "user_id,client_ref"))

@@ -53,6 +53,18 @@ class UserContext(BaseMiddleware):
         return await handler(event, data)
 
 
+class Heartbeat(BaseMiddleware):
+    """Qayta ishlangan Telegram yangilanishlari statistikasi: /health da bot HAQIQATAN yangilanish olayotganini ko'rsatadi."""
+
+    def __init__(self, stats: dict):
+        self.stats = stats
+
+    async def __call__(self, handler, event, data):
+        self.stats["updates"] = self.stats.get("updates", 0) + 1
+        self.stats["last"] = time.monotonic()
+        return await handler(event, data)
+
+
 class Throttle(BaseMiddleware):
     def __init__(self, limit: int = 10, per: float = 10.0):
         self.rl = RateLimiter(limit, per)

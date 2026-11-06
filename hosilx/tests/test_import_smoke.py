@@ -36,6 +36,9 @@ def _install_stubs():
     mod("aiogram.fsm"); mod("aiogram.fsm.context", FSMContext=_Any)
     mod("aiogram.fsm.state", State=State, StatesGroup=StatesGroup)
     mod("aiogram.types", **{n: _Any for n in names})
+    mod("aiogram.client"); mod("aiogram.client.default", DefaultBotProperties=_Any)
+    mod("aiogram.enums", ParseMode=_Any())
+    mod("aiogram.fsm.storage"); mod("aiogram.fsm.storage.memory", MemoryStorage=_Any)
     mod("aiogram.exceptions", **exc)
 
 
@@ -43,10 +46,16 @@ try:
     import aiogram  # noqa: F401
 except ImportError:
     _install_stubs()
+try:
+    import aiohttp  # noqa: F401
+except ImportError:
+    _m = types.ModuleType("aiohttp")
+    _m.web = _Any()
+    sys.modules["aiohttp"] = _m
 
 MODULES = ["bot.ui", "bot.states", "bot.middlewares", "bot.services.notifier", "bot.services.ai", "bot.services.summary",
            "bot.handlers.common", "bot.handlers.menu", "bot.handlers.start", "bot.handlers.market", "bot.handlers.warehouses",
-           "bot.handlers.planner", "bot.handlers.finance", "bot.handlers.ai", "bot.handlers.profile", "bot.handlers.reports", "bot.handlers.fallback"]
+           "bot.handlers.planner", "bot.handlers.finance", "bot.handlers.ai", "bot.handlers.profile", "bot.handlers.reports", "bot.handlers.services", "bot.handlers.diary", "bot.handlers.fallback", "bot.main"]
 
 
 class Smoke(unittest.TestCase):

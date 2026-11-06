@@ -18,3 +18,6 @@ Rollar: `profiles.role` cheklovi faqat farmer, buyer, warehouse_owner, admin. Lo
 2. `protect_role` triggeri service_role'ni ham to'xtatadi: bot rolni to'g'ridan-to'g'ri o'zgartira olmaydi; migration12 dagi `bot_set_role()` (whitelist, faqat onboarding tugamagan profil) orqali o'zgartiradi.
 3. RLS siyosatlari profilning HAMMA ustunini egasiga yangilashga ruxsat beradi, shu jumladan `telegram_id`. Bu xavfli (boshqa odamning Telegram ID sini o'z profiliga yozish mumkin): migration12 buni trigger bilan yopadi.
 4. Veb AI endpointi (`/api/ai`) foydalanuvchi JWT tokenini talab qiladi; bot service_role bilan ishlaydi va JWT yarata olmaydi. Shuning uchun bot o'zining AI adapteriga ega (kalit/model environment'da), kunlik limit esa `ai_messages` orqali sayt bilan umumiy.
+
+## Yangilanish: migration13
+Agroapteka, texnika ijarasi, logistika va dala daftari uchun jadvallar mavjud emas edi; `migration13_services.sql` ularni additive tarzda qo'shadi (RLS bilan). Bot tanlovlari va maydonlari shu SQL CHECK cheklovlariga mosligi testda tekshiriladi. Hosil Pasporti hanuz yo'q: ochiq tekshiruv sahifasi va QR xizmati mavjud emas.

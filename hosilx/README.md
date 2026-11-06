@@ -11,11 +11,11 @@ bot/
   repositories.py    BARCHA bazaga murojaat; egalik va ko'rinish filtrlari shu yerda
   i18n.py            uz/ru/en matnlar (har kalit bitta qatorda uch tilda)
   middlewares.py     foydalanuvchi konteksti (profil, til), tezlik cheklovi, xato ushlagich
-  handlers/          start (ro'yxatdan o'tish, /link), menu, market, warehouses, planner, finance, ai, profile, reports, fallback
-  services/          ai (adapter), notifier (bildirishnoma/eslatma), summary
+  handlers/          start (ro'yxatdan o'tish, /link), menu, market, warehouses, services (agroapteka, texnika, logistika), diary (dala daftari), planner, finance, ai, profile, reports, fallback
+  services/          ai (adapter), notifier (bildirishnoma/eslatma), keepalive, specs (agroapteka/texnika/logistika tavsiflari), summary
   utils/             toza funksiyalar: validators, finance, prices, registration, links, notify, ai_prompts, pagination, regions, ratelimit
 supabase/migration12_telegram_bot.sql
-tests/               55 test
+tests/               77 test
 ```
 
 ## Ro'yxatdan o'tish va hisobni ulash (qaror va sabab)
@@ -45,11 +45,15 @@ tests/               55 test
 | AI Narx | Ishlaydi sxemada: AI emas, faol e'lonlardan hisoblanadi (sinalmagan) |
 | Shikoyat (mahsulot, ombor) | Kod tayyor (sinalmagan) |
 | Bildirishnoma va vazifa eslatmasi | Kod tayyor; `migration12` kerak |
-| Logistika, texnika ijarasi, agroapteka, dala daftari, Hosil Pasporti | Rejalashtirilgan: bazada jadval yo'q, bot "rejalashtirilgan" deydi |
-| Logist/xizmat/agroapteka egasi rollari, SMS OTP, chat | Yo'q (bazada/provayderda mavjud emas) |
+| Agroapteka: aptekalar va mahsulotlar (katalog, qidiruv, hudud/turkum filtri, so'rov, shikoyat, egasi paneli) | Kod tayyor (sinalmagan); `migration13` kerak |
+| Texnika ijarasi: e'lonlar, filtr, so'rov, shikoyat, egasi paneli | Kod tayyor (sinalmagan); `migration13` kerak |
+| Logistika: tashuvchi e'lonlari (qaytish yo'li, boshqa yuk bilan), so'rov, shikoyat, egasi paneli | Kod tayyor (sinalmagan); `migration13` kerak |
+| Dala daftari: dalalar, 8 turdagi qayd (ekish, sug'orish, o'g'it, dori, mehnat, hosil, xarajat, kuzatuv), yillik xulosa | Kod tayyor (sinalmagan); `migration13` kerak |
+| Hosil Pasporti (QR) | Rejalashtirilgan: ochiq tekshiruv sahifasi (sayt) va QR xizmati yo'q, shuning uchun bot uni uydirmaydi |
+| Maxsus logist/agroapteka rollari, SMS OTP, bot ichidagi chat | Yo'q. Yangi modullar uchun rol shart emas: har qanday ulangan foydalanuvchi e'lon qo'sha oladi; aloqa e'londagi telefon yoki so'rov matni orqali |
 
 ## Migratsiya (production'ga avtomatik qo'llanmaydi)
-SQL Editor'da, zaxira nusxadan keyin: avval schema, migration2, 4, 6 (mavjud bo'lsa o'tkazing), keyin **`supabase/migration12_telegram_bot.sql`**. U additive: yangi jadval `telegram_registrations`, profil/bildirishnoma ustunlari, `finance_entries.client_ref`, `telegram_id` himoyasi va `bot_set_role()`. Ulanmagan holatda bot ishlamaydi (ustunlar topilmaydi).
+SQL Editor'da, zaxira nusxadan keyin: avval schema, migration2, 4, 6 (mavjud bo'lsa o'tkazing), keyin **`supabase/migration12_telegram_bot.sql`**, keyin **`supabase/migration13_services.sql`** (agroapteka, texnika, logistika, dala daftari; additive). U additive: yangi jadval `telegram_registrations`, profil/bildirishnoma ustunlari, `finance_entries.client_ref`, `telegram_id` himoyasi va `bot_set_role()`. Ulanmagan holatda bot ishlamaydi (ustunlar topilmaydi).
 
 ## Lokal ishga tushirish
 ```bash
@@ -67,5 +71,11 @@ To'liq yo'riqnoma: `docs/DEPLOY_RENDER.md` ("requirements.txt topilmadi" xatosi:
 **Uxlab qolish:** bepul web xizmati 15 daqiqa tashqi trafiksiz uxlaydi. Bot `RENDER_EXTERNAL_URL/health` ni har 10 daqiqada o'zi chaqiradi (keep-alive) va uptimerobot.com'da qo'shimcha monitor tavsiya etiladi; lekin bepul tarifda doimiy ishlash KAFOLATLANMAGAN: kafolat uchun pullik tarif. FSM holatini saqlash uchun `REDIS_URL` bering.
 
 ## Tekshiruvlar
-Bajarilgan: 55 test (validatorlar, sozlamalar, sana/vaqt, moliya hisobi, narx, bildirishnoma qoidalari, ro'yxatdan o'tish mantig'i, tezlik cheklovi, soxta Supabase bilan egalik/ko'rinish/idempotentlik/ulash kodi, 3 til paritetini va kodda ishlatilgan har bir matn kaliti borligini tekshirish, import tutun testi).
+Bajarilgan: 77 test (validatorlar, sozlamalar, sana/vaqt, moliya hisobi, narx, bildirishnoma qoidalari, ro'yxatdan o'tish mantig'i, tezlik cheklovi, soxta Supabase bilan egalik/ko'rinish/idempotentlik/ulash kodi, 3 til paritetini va kodda ishlatilgan har bir matn kaliti borligini tekshirish, import tutun testi).
 **Bajarilmagan:** haqiqiy aiogram bilan handlerlarni ishga tushirish, haqiqiy Supabase/Telegram/AI bilan sinov (bu muhitda paket va tarmoq yo'q). Mock testlar o'tishi deployment ishlashini isbotlamaydi.
+
+## Yangi modullar: bilish kerak bo'lgan cheklovlar
+- Ilova va sayt bu jadvallar (`pharmacies`, `machinery_listings`, `freight_listings`, `farm_fields`, ...) uchun hali ekranga ega emas: ma'lumot bot va Supabase'da turadi, bazada umumiy.
+- E'lonlar darhol ko'rinadi (`moderation_status='approved'`). Admin uchun hozircha alohida ekran yo'q: yashirish Supabase Table Editor'da `moderation_status='rejected'` qilish bilan.
+- Pestitsid e'lonlarida "sotuvchi kiritgan, tekshirilmagan" ogohlantirishi chiqadi; bot me'yor yoki sertifikat uydirmaydi.
+- Bot ichida chat yo'q: so'rov egasiga bildirishnoma boradi (ilova, sayt va Telegram), qabul/rad qilinsa so'rovchiga xabar boradi. Aloqa uchun so'rov matniga telefon yozing.
